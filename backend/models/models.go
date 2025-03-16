@@ -36,6 +36,16 @@ type EBSVolume struct {
 	AttachedTo       string    `json:"attachedTo"`
 }
 
+// CloudWatchLogGroup represents a CloudWatch Log Group
+type CloudWatchLogGroup struct {
+	Name              string    `json:"name"`
+	ARN               string    `json:"arn"`
+	StoredBytes       int64     `json:"storedBytes"`
+	RetentionDays     int32     `json:"retentionDays"`
+	CreationTime      time.Time `json:"creationTime"`
+	MetricFilterCount int32     `json:"metricFilterCount"`
+}
+
 // CostByService represents the cost data for a specific service
 type CostByService struct {
 	Service string `json:"service"`
@@ -53,8 +63,9 @@ type CostData struct {
 
 // ResourcesSummary represents a summary of all resources
 type ResourcesSummary struct {
-	EC2Instances []EC2Instance `json:"ec2Instances"`
-	RDSInstances []RDSInstance `json:"rdsInstances"`
-	EBSVolumes   []EBSVolume   `json:"ebsVolumes"`
-	CostData     *CostData     `json:"costData"`
+	EC2Instances        []EC2Instance        `json:"ec2Instances"`
+	RDSInstances        []RDSInstance        `json:"rdsInstances"`
+	EBSVolumes          []EBSVolume          `json:"ebsVolumes"`
+	CloudWatchLogGroups []CloudWatchLogGroup `json:"cloudWatchLogGroups"`
+	CostData            *CostData            `json:"costData"`
 }

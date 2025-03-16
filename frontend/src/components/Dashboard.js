@@ -11,6 +11,7 @@ const Dashboard = () => {
     ec2Instances: [],
     rdsInstances: [],
     ebsVolumes: [],
+    cloudWatchLogGroups: [],
     costData: { results: [] }
   });
 
@@ -18,6 +19,7 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        const data = await getSummary();
         setSummary(data);
       } catch (err) {
         setError('Failed to load data. Please try again later.');
@@ -35,6 +37,25 @@ const Dashboard = () => {
 
   const totalEC2 = summary.ec2Instances.length;
   const totalRDS = summary.rdsInstances.length;
+  const totalEBS = summary.ebsVolumes.length;
+  const totalLogGroups = summary.cloudWatchLogGroups.length;
+  
+  // Calculate total CloudWatch logs storage in bytes
+  const totalLogStorageBytes = summary.cloudWatchLogGroups.reduce((acc, lg) => {
+    return acc + lg.storedBytes;
+  }, 0);
+
+  // Format bytes to human readable format
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
   
   // Calculate total cost
   const totalCost = summary.costData.results.reduce((acc, item) => {
@@ -60,6 +81,15 @@ const Dashboard = () => {
           <p className="number">{totalRDS}</p>
         </div>
         <div className="card">
+          <h3>EBS Volumes</h3>
+          <p className="number">{totalEBS}</p>
+        </div>
+        <div className="card">
+          <h3>Log Groups</h3>
+          <p className="number">{totalLogGroups}</p>
+          <p className="sub-info">{formatBytes(totalLogStorageBytes)} stored</p>
+        </div>
+        <div className="card">
           <h3>Total Cost (30 Days)</h3>
           <p className="number">{totalCost} {costUnit}</p>
         </div>
@@ -71,7 +101,12 @@ const Dashboard = () => {
 
       <div className="resources-section">
         <h2>Running Resources</h2>
-        <ResourcesList ec2Instances={summary.ec2Instances} rdsInstances={summary.rdsInstances} />
+        <ResourcesList 
+          ec2Instances={summary.ec2Instances} 
+          rdsInstances={summary.rdsInstances}
+          ebsVolumes={summary.ebsVolumes}
+          cloudWatchLogGroups={summary.cloudWatchLogGroups}
+        />
       </div>
     </div>
   );

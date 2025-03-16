@@ -47,6 +47,7 @@ func (s *Server) registerRoutes() {
 		api.GET("/ec2", s.getEC2Instances)
 		api.GET("/rds", s.getRDSInstances)
 		api.GET("/ebs", s.getEBSVolumes)
+		api.GET("/cloudwatch/log-groups", s.getCloudWatchLogGroups)
 		api.GET("/cost", s.getCost)
 		api.GET("/summary", s.getSummary)
 	}

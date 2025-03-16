@@ -73,12 +73,40 @@ func (s *Server) getCost(c *gin.Context) {
 	c.JSON(http.StatusOK, costData)
 }
 
-// getResources returns all resources (EC2, RDS, and EBS)
+// getResources returns all resources (EC2, RDS, EBS, CloudWatch Log Groups)
 func (s *Server) getResources(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
 	defer cancel()
-		"ec2": ec2Instances,
-		"rds": rdsInstances,
+
+	ec2Instances, err := s.aws.GetRunningEC2Instances(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	rdsInstances, err := s.aws.GetRunningRDSInstances(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ebsVolumes, err := s.aws.GetEBSVolumes(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	logGroups, err := s.aws.GetCloudWatchLogGroups(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"ec2":             ec2Instances,
+		"rds":             rdsInstances,
+		"ebs":             ebsVolumes,
+		"cloudwatch_logs": logGroups,
 	})
 }
 
@@ -99,6 +127,18 @@ func (s *Server) getSummary(c *gin.Context) {
 		return
 	}
 
+	ebsVolumes, err := s.aws.GetEBSVolumes(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	logGroups, err := s.aws.GetCloudWatchLogGroups(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	start, end := aws.GetDefaultDateRange()
 	costData, err := s.aws.GetCostAndUsage(ctx, start, end)
 	if err != nil {
@@ -107,10 +147,26 @@ func (s *Server) getSummary(c *gin.Context) {
 	}
 
 	summary := models.ResourcesSummary{
-		EC2Instances: ec2Instances,
-		RDSInstances: rdsInstances,
-		CostData:     costData,
+		EC2Instances:        ec2Instances,
+		RDSInstances:        rdsInstances,
+		EBSVolumes:          ebsVolumes,
+		CloudWatchLogGroups: logGroups,
+		CostData:            costData,
 	}
 
 	c.JSON(http.StatusOK, summary)
+}
+
+// getCloudWatchLogGroups returns all CloudWatch Log Groups
+func (s *Server) getCloudWatchLogGroups(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	defer cancel()
+
+	logGroups, err := s.aws.GetCloudWatchLogGroups(ctx)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, logGroups)
 }
