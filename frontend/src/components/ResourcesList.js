@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import './ResourcesList.css';
 
-const ResourcesList = ({ ec2Instances, rdsInstances, ebsVolumes, cloudWatchLogGroups }) => {
+const ResourcesList = ({ ec2Instances = [], rdsInstances = [], ebsVolumes = [], cloudWatchLogGroups = [] }) => {
   const [activeTab, setActiveTab] = useState('ec2');
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: 'ascending'
   });
-
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  
   const handleSort = (key) => {
     let direction = 'ascending';
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -30,10 +34,54 @@ const ResourcesList = ({ ec2Instances, rdsInstances, ebsVolumes, cloudWatchLogGr
     });
   };
 
-  const sortedEC2 = getSortedItems(ec2Instances);
-  const sortedRDS = getSortedItems(rdsInstances);
+  // Get sorted data for each resource type
+  const sortedEC2 = getSortedItems(ec2Instances || []);
+  const sortedRDS = getSortedItems(rdsInstances || []);
   const sortedEBS = getSortedItems(ebsVolumes || []);
   const sortedLogGroups = getSortedItems(cloudWatchLogGroups || []);
+  
+  // Get current items based on pagination
+  const getCurrentItems = (items) => {
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    return items.slice(indexOfFirstItem, indexOfLastItem);
+  };
+  
+  // Get paginated data
+  const currentEC2 = getCurrentItems(sortedEC2);
+  const currentRDS = getCurrentItems(sortedRDS);
+  const currentEBS = getCurrentItems(sortedEBS);
+  const currentLogGroups = getCurrentItems(sortedLogGroups);
+  
+  // Calculate total pages for the active tab
+  const getActiveTabItems = () => {
+    switch (activeTab) {
+      case 'ec2': return sortedEC2;
+      case 'rds': return sortedRDS;
+      case 'ebs': return sortedEBS;
+      case 'logs': return sortedLogGroups;
+      default: return [];
+    }
+  };
+  
+  const totalPages = Math.ceil(getActiveTabItems().length / itemsPerPage);
+  
+  // Handle page changes
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+  
+  // Handle tab changes (reset pagination when tab changes)
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
+  
+  // Handle items per page change
+  const handleItemsPerPageChange = (e) => {
+    setItemsPerPage(Number(e.target.value));
+    setCurrentPage(1);
+  };
 
   const getSortIcon = (key) => {
     if (sortConfig.key !== key) return null;
@@ -53,33 +101,104 @@ const ResourcesList = ({ ec2Instances, rdsInstances, ebsVolumes, cloudWatchLogGr
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
 
+  // Create pagination buttons
+  const renderPaginationControls = () => {
+    const pages = [];
+    
+    // Previous button
+    pages.push(
+      <button 
+        key="prev" 
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="pagination-button"
+      >
+        &laquo; Prev
+      </button>
+    );
+    
+    // Page numbers
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button 
+          key={i} 
+          onClick={() => handlePageChange(i)}
+          className={i === currentPage ? "pagination-button active" : "pagination-button"}
+        >
+          {i}
+        </button>
+      );
+    }
+    
+    // Next button
+    pages.push(
+      <button 
+        key="next" 
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === totalPages || totalPages === 0}
+        className="pagination-button"
+      >
+        Next &raquo;
+      </button>
+    );
+    
+    return pages;
+  };
+
   return (
     <div className="resources-list">
       <div className="tabs">
         <button 
           className={activeTab === 'ec2' ? 'active' : ''} 
-          onClick={() => setActiveTab('ec2')}
+          onClick={() => handleTabChange('ec2')}
         >
-          EC2 Instances ({ec2Instances.length})
+          EC2 Instances ({(ec2Instances || []).length})
         </button>
         <button 
           className={activeTab === 'rds' ? 'active' : ''} 
-          onClick={() => setActiveTab('rds')}
+          onClick={() => handleTabChange('rds')}
         >
-          RDS Instances ({rdsInstances.length})
+          RDS Instances ({(rdsInstances || []).length})
         </button>
         <button 
           className={activeTab === 'ebs' ? 'active' : ''} 
-          onClick={() => setActiveTab('ebs')}
+          onClick={() => handleTabChange('ebs')}
         >
           EBS Volumes ({(ebsVolumes || []).length})
         </button>
         <button 
           className={activeTab === 'logs' ? 'active' : ''} 
-          onClick={() => setActiveTab('logs')}
+          onClick={() => handleTabChange('logs')}
         >
           Log Groups ({(cloudWatchLogGroups || []).length})
         </button>
+      </div>
+
+      <div className="table-controls">
+        <div className="pagination-info">
+          Showing {getActiveTabItems().length > 0 ? ((currentPage - 1) * itemsPerPage) + 1 : 0} to {Math.min(currentPage * itemsPerPage, getActiveTabItems().length)} of {getActiveTabItems().length} entries
+        </div>
+        <div className="items-per-page">
+          <label htmlFor="itemsPerPage">Items per page:</label>
+          <select 
+            id="itemsPerPage"
+            value={itemsPerPage}
+            onChange={handleItemsPerPageChange}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+          </select>
+        </div>
       </div>
 
       <div className="tab-content">
@@ -109,7 +228,7 @@ const ResourcesList = ({ ec2Instances, rdsInstances, ebsVolumes, cloudWatchLogGr
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedEC2.map((instance) => (
+                  {currentEC2.map((instance) => (
                     <tr key={instance.id}>
                       <td>{instance.name || '-'}</td>
                       <td>{instance.id}</td>
@@ -153,7 +272,7 @@ const ResourcesList = ({ ec2Instances, rdsInstances, ebsVolumes, cloudWatchLogGr
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedRDS.map((instance) => (
+                  {currentRDS.map((instance) => (
                     <tr key={instance.id}>
                       <td>{instance.id}</td>
                       <td>{instance.class}</td>
@@ -171,7 +290,7 @@ const ResourcesList = ({ ec2Instances, rdsInstances, ebsVolumes, cloudWatchLogGr
 
         {activeTab === 'ebs' && (
           <div className="ebs-list">
-            {!ebsVolumes || sortedEBS.length === 0 ? (
+            {(!ebsVolumes || sortedEBS.length === 0) ? (
               <p>No EBS volumes found.</p>
             ) : (
               <table>
@@ -198,7 +317,7 @@ const ResourcesList = ({ ec2Instances, rdsInstances, ebsVolumes, cloudWatchLogGr
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedEBS.map((volume) => (
+                  {currentEBS.map((volume) => (
                     <tr key={volume.id}>
                       <td>{volume.id}</td>
                       <td>{volume.name || '-'}</td>
@@ -240,7 +359,7 @@ const ResourcesList = ({ ec2Instances, rdsInstances, ebsVolumes, cloudWatchLogGr
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedLogGroups.map((logGroup) => (
+                  {currentLogGroups.map((logGroup) => (
                     <tr key={logGroup.name}>
                       <td>{logGroup.name}</td>
                       <td>{formatBytes(logGroup.storedBytes)}</td>
@@ -255,6 +374,12 @@ const ResourcesList = ({ ec2Instances, rdsInstances, ebsVolumes, cloudWatchLogGr
           </div>
         )}
       </div>
+      
+      {getActiveTabItems().length > 0 && (
+        <div className="pagination">
+          {renderPaginationControls()}
+        </div>
+      )}
     </div>
   );
 };

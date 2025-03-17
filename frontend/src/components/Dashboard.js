@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+  import React, { useEffect, useState } from 'react';
 import { getSummary } from '../services/api';
 import CostChart from './CostChart';
 import ResourcesList from './ResourcesList';
@@ -20,7 +20,14 @@ const Dashboard = () => {
       try {
         setLoading(true);
         const data = await getSummary();
-        setSummary(data);
+        // Ensure all data properties exist with defaults to prevent null errors
+        setSummary({
+          ec2Instances: data.ec2Instances || [],
+          rdsInstances: data.rdsInstances || [],
+          ebsVolumes: data.ebsVolumes || [],
+          cloudWatchLogGroups: data.cloudWatchLogGroups || [],
+          costData: data.costData || { results: [] }
+        });
       } catch (err) {
         setError('Failed to load data. Please try again later.');
         console.error(err);
@@ -35,14 +42,15 @@ const Dashboard = () => {
   if (loading) return <div className="loading">Loading dashboard data...</div>;
   if (error) return <div className="error">{error}</div>;
 
-  const totalEC2 = summary.ec2Instances.length;
-  const totalRDS = summary.rdsInstances.length;
-  const totalEBS = summary.ebsVolumes.length;
-  const totalLogGroups = summary.cloudWatchLogGroups.length;
+  // Use optional chaining and provide default values
+  const totalEC2 = summary.ec2Instances?.length || 0;
+  const totalRDS = summary.rdsInstances?.length || 0;
+  const totalEBS = summary.ebsVolumes?.length || 0;
+  const totalLogGroups = summary.cloudWatchLogGroups?.length || 0;
   
-  // Calculate total CloudWatch logs storage in bytes
-  const totalLogStorageBytes = summary.cloudWatchLogGroups.reduce((acc, lg) => {
-    return acc + lg.storedBytes;
+  // Calculate total CloudWatch logs storage in bytes with null check
+  const totalLogStorageBytes = (summary.cloudWatchLogGroups || []).reduce((acc, lg) => {
+    return acc + (lg.storedBytes || 0);
   }, 0);
 
   // Format bytes to human readable format
@@ -57,13 +65,13 @@ const Dashboard = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
   
-  // Calculate total cost
-  const totalCost = summary.costData.results.reduce((acc, item) => {
-    return acc + parseFloat(item.amount);
+  // Calculate total cost with null check
+  const totalCost = (summary.costData?.results || []).reduce((acc, item) => {
+    return acc + parseFloat(item.amount || 0);
   }, 0).toFixed(2);
   
-  // Get the currency unit from the first cost item
-  const costUnit = summary.costData.results.length > 0 ? summary.costData.results[0].unit : 'USD';
+  // Get the currency unit with null check
+  const costUnit = summary.costData?.results?.length > 0 ? summary.costData.results[0].unit : 'USD';
 
   return (
     <div className="dashboard">
@@ -96,16 +104,16 @@ const Dashboard = () => {
       </div>
 
       <div className="dashboard-charts">
-        <CostChart costData={summary.costData} />
+        <CostChart costData={summary.costData || { results: [] }} />
       </div>
 
       <div className="resources-section">
         <h2>Running Resources</h2>
         <ResourcesList 
-          ec2Instances={summary.ec2Instances} 
-          rdsInstances={summary.rdsInstances}
-          ebsVolumes={summary.ebsVolumes}
-          cloudWatchLogGroups={summary.cloudWatchLogGroups}
+          ec2Instances={summary.ec2Instances || []} 
+          rdsInstances={summary.rdsInstances || []}
+          ebsVolumes={summary.ebsVolumes || []}
+          cloudWatchLogGroups={summary.cloudWatchLogGroups || []}
         />
       </div>
     </div>

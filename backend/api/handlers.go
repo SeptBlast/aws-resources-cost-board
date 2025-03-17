@@ -12,7 +12,7 @@ import (
 
 // getEC2Instances returns all running EC2 instances
 func (s *Server) getEC2Instances(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30000*time.Second)
 	defer cancel()
 
 	instances, err := s.aws.GetRunningEC2Instances(ctx)
@@ -26,7 +26,7 @@ func (s *Server) getEC2Instances(c *gin.Context) {
 
 // getRDSInstances returns all running RDS instances
 func (s *Server) getRDSInstances(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30000*time.Second)
 	defer cancel()
 
 	instances, err := s.aws.GetRunningRDSInstances(ctx)
@@ -40,7 +40,7 @@ func (s *Server) getRDSInstances(c *gin.Context) {
 
 // getEBSVolumes returns all EBS volumes
 func (s *Server) getEBSVolumes(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30000*time.Second)
 	defer cancel()
 
 	volumes, err := s.aws.GetEBSVolumes(ctx)
@@ -54,7 +54,7 @@ func (s *Server) getEBSVolumes(c *gin.Context) {
 
 // getCost returns cost data for the specified time period
 func (s *Server) getCost(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30000*time.Second)
 	defer cancel()
 
 	start := c.DefaultQuery("start", "")
@@ -75,7 +75,7 @@ func (s *Server) getCost(c *gin.Context) {
 
 // getResources returns all resources (EC2, RDS, EBS, CloudWatch Log Groups)
 func (s *Server) getResources(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 30000*time.Second)
 	defer cancel()
 
 	ec2Instances, err := s.aws.GetRunningEC2Instances(ctx)
@@ -112,7 +112,7 @@ func (s *Server) getResources(c *gin.Context) {
 
 // getSummary returns a summary of resources and their costs
 func (s *Server) getSummary(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 3000*time.Second)
 	defer cancel()
 
 	ec2Instances, err := s.aws.GetRunningEC2Instances(ctx)
@@ -159,7 +159,7 @@ func (s *Server) getSummary(c *gin.Context) {
 
 // getCloudWatchLogGroups returns all CloudWatch Log Groups
 func (s *Server) getCloudWatchLogGroups(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 3000*time.Second)
 	defer cancel()
 
 	logGroups, err := s.aws.GetCloudWatchLogGroups(ctx)

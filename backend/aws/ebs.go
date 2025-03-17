@@ -30,12 +30,12 @@ func (c *ClientsConfig) GetEBSVolumes(ctx context.Context) ([]models.EBSVolume, 
 		volumes = append(volumes, models.EBSVolume{
 			ID:               *volume.VolumeId,
 			Name:             name,
-			Size:             volume.Size,
+			Size:             *volume.Size,
 			VolumeType:       string(volume.VolumeType),
 			State:            string(volume.State),
 			CreationTime:     *volume.CreateTime,
 			AvailabilityZone: *volume.AvailabilityZone,
-			Encrypted:        volume.Encrypted,
+			Encrypted:        volume.Encrypted != nil && *volume.Encrypted,
 			AttachedTo:       attachedTo,
 		})
 	}
